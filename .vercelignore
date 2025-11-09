@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist/
+build/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Vercel
+.vercel
+
+# Large folders that shouldn't be deployed
+threeJS_Development/BORTtheBOT/node_modules/
+threeJS_Development/BORTtheBOT/apps/*/node_modules/
+threeJS_Development/BORTtheBOT/packages/*/node_modules/
+threeJS_Development/BORTtheBOT/apps/*/dist/
+threeJS_Development/BORTtheBOT/packages/*/dist/
+threeJS_Development/BORTtheBOT/apps/*/release/
+threeJS_Development/BORTtheBOT/apps/*/build/
+threeJS_Development/BORTtheBOT/.git/
+
+# Game builds and releases
+*.exe
+*.dmg
+*.AppImage
+release/
+builds/
+dist/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Large development folders
+threeJS_Development/BORTtheBOT/
+

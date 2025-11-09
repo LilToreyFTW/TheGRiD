@@ -1,0 +1,417 @@
+/* ADDED - Arcade/Digital Font */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Rajdhani', 'Courier New', monospace;
+    overflow: hidden;
+    background: #000;
+    color: #00ffff;
+    margin: 0;
+    padding: 0;
+    /* ADDED - CRT Scanline effect */
+    background-image: 
+        repeating-linear-gradient(
+            0deg,
+            rgba(0, 255, 255, 0.03) 0px,
+            transparent 1px,
+            transparent 2px,
+            rgba(0, 255, 255, 0.03) 3px
+        );
+}
+
+/* ADDED - Digital Glitch Effect */
+@keyframes glitch {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+}
+
+@keyframes neonPulse {
+    0%, 100% {
+        text-shadow: 
+            0 0 5px #00ffff,
+            0 0 10px #00ffff,
+            0 0 15px #00ffff,
+            0 0 20px #00ffff;
+    }
+    50% {
+        text-shadow: 
+            0 0 2px #00ffff,
+            0 0 5px #00ffff,
+            0 0 8px #00ffff,
+            0 0 12px #00ffff,
+            0 0 25px #00ffff,
+            0 0 35px #00ffff;
+    }
+}
+
+@keyframes digitalFlicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+/* Loading Screen Styles */
+#loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* ADDED - Grid pattern overlay */
+    background-image: 
+        linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+}
+
+#loading-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00ffff, #ff00ff, #00ffff);
+    background-size: 200% 100%;
+    animation: neonFlow 2s linear infinite;
+    box-shadow: 
+        0 0 10px #00ffff,
+        0 0 20px #00ffff,
+        0 0 30px #00ffff,
+        inset 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+@keyframes neonFlow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+#loading-text-overlay {
+    color: #00ffff;
+    font-size: 18px;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 
+        0 0 5px #00ffff,
+        0 0 10px #00ffff,
+        0 0 15px #00ffff;
+    animation: neonPulse 2s ease-in-out infinite;
+}
+
+#game-container {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    /* ADDED - Digital grid overlay */
+    background-image: 
+        linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 100px 100px;
+}
+
+#game-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    /* ADDED - Pixelated effect */
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+#ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+}
+
+#hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    font-family: 'Orbitron', monospace;
+    pointer-events: none;
+    /* ADDED - Digital border */
+    border: 2px solid #00ffff;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.8);
+    box-shadow: 
+        0 0 10px #00ffff,
+        inset 0 0 20px rgba(0, 255, 255, 0.2);
+}
+
+#hud > div {
+    margin-bottom: 10px;
+    padding: 8px 15px;
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid #00ffff;
+    border-radius: 0;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 
+        0 0 5px currentColor,
+        0 0 10px currentColor;
+    animation: digitalFlicker 3s ease-in-out infinite;
+}
+
+#score {
+    color: #00ff00;
+    border-color: #00ff00;
+    box-shadow: 
+        0 0 5px #00ff00,
+        inset 0 0 10px rgba(0, 255, 0, 0.2);
+}
+
+#health {
+    color: #ff0080;
+    border-color: #ff0080;
+    box-shadow: 
+        0 0 5px #ff0080,
+        inset 0 0 10px rgba(255, 0, 128, 0.2);
+}
+
+#bikes {
+    color: #ffaa00;
+    border-color: #ffaa00;
+    box-shadow: 
+        0 0 5px #ffaa00,
+        inset 0 0 10px rgba(255, 170, 0, 0.2);
+}
+
+    #level {
+        color: #ffaa00; /* ADDED - Neon orange */
+    }
+
+    #fps {
+    color: #00ffff;
+    border-color: #00ffff;
+    font-size: 14px;
+    box-shadow: 
+        0 0 5px #00ffff,
+        inset 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+#start-screen,
+#game-over-screen {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    background: rgba(0, 0, 0, 0.95);
+    padding: 40px 60px;
+    border: 3px solid #00ffff;
+    border-radius: 0;
+    box-shadow: 
+        0 0 20px #00ffff,
+        0 0 40px #00ffff,
+        inset 0 0 30px rgba(0, 255, 255, 0.2);
+    pointer-events: auto;
+    /* ADDED - Digital grid background */
+    background-image: 
+        linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+    #instructions a {
+        transition: all 0.3s ease;
+    }
+
+    #instructions a:hover {
+        color: #00ffff !important;
+        text-shadow: 0 0 10px #5865F2;
+        transform: scale(1.05);
+    }
+
+    #start-screen h1 {
+    font-size: 64px;
+    margin-bottom: 10px;
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    background: linear-gradient(45deg, #00ffff, #ff00ff, #00ffff);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: neonFlow 3s ease infinite;
+    text-shadow: 
+        0 0 10px #00ffff,
+        0 0 20px #00ffff,
+        0 0 30px #00ffff;
+    filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.8));
+}
+
+#start-screen p {
+    font-size: 24px;
+    margin-bottom: 30px;
+    color: #00ffff;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    text-shadow: 
+        0 0 5px #00ffff,
+        0 0 10px #00ffff;
+}
+
+#instructions {
+    margin-top: 30px;
+    text-align: left;
+    font-size: 14px;
+    color: #00ffff;
+    font-family: 'Rajdhani', sans-serif;
+    border: 1px solid #00ffff;
+    padding: 15px;
+    background: rgba(0, 255, 255, 0.05);
+}
+
+#instructions h3 {
+    margin-bottom: 15px;
+    color: #ff00ff;
+    text-align: center;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 
+        0 0 5px #ff00ff,
+        0 0 10px #ff00ff;
+}
+
+#instructions p {
+    margin: 8px 0;
+    font-size: 14px;
+    color: #00ffff;
+}
+
+button {
+    background: transparent;
+    border: 2px solid #00ffff;
+    color: #00ffff;
+    padding: 15px 40px;
+    font-size: 20px;
+    font-weight: bold;
+    font-family: 'Orbitron', monospace;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 0 10px #00ffff,
+        inset 0 0 20px rgba(0, 255, 255, 0.2);
+    pointer-events: auto;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    position: relative;
+    overflow: hidden;
+}
+
+button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.4), transparent);
+    transition: left 0.5s;
+}
+
+button:hover {
+    background: rgba(0, 255, 255, 0.1);
+    box-shadow: 
+        0 0 20px #00ffff,
+        0 0 40px #00ffff,
+        inset 0 0 30px rgba(0, 255, 255, 0.3);
+    transform: translateY(-2px);
+    text-shadow: 
+        0 0 10px #00ffff,
+        0 0 20px #00ffff;
+}
+
+button:hover::before {
+    left: 100%;
+}
+
+button:active {
+    transform: translateY(0);
+    box-shadow: 
+        0 0 5px #00ffff,
+        inset 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+#game-over-screen h1 {
+    font-size: 48px;
+    color: #ff0080;
+    margin-bottom: 20px;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 
+        0 0 10px #ff0080,
+        0 0 20px #ff0080,
+        0 0 30px #ff0080;
+    animation: glitch 0.3s infinite;
+}
+
+#game-over-screen p {
+    font-size: 24px;
+    margin-bottom: 30px;
+    color: #00ffff;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+#final-score {
+    color: #00ff00;
+    font-weight: bold;
+    font-size: 32px;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 
+        0 0 10px #00ff00,
+        0 0 20px #00ff00;
+}
+
+/* Loading indicator */
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: #00ffff;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 
+        0 0 10px #00ffff,
+        0 0 20px #00ffff;
+}
+
+/* ADDED - Scanline overlay effect */
+#game-container::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15) 0px,
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+    z-index: 9999;
+    animation: scanlineMove 8s linear infinite;
+}
+
+@keyframes scanlineMove {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(4px); }
+}

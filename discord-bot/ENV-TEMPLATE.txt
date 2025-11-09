@@ -1,0 +1,80 @@
+# GRiD Discord Bot - Complete .env File
+# 
+# INSTRUCTIONS:
+# 1. Copy this entire file
+# 2. Create a new file named ".env" in the project root directory
+# 3. Paste this content into the .env file
+# 4. The bot will automatically load these values when started
+#
+# SECURITY NOTE:
+# - The .env file is already in .gitignore and will NOT be committed
+# - Never share your bot token or secrets publicly
+# - If your token is exposed, regenerate it immediately in Discord Developer Portal
+
+# ============================================
+# DISCORD BOT CREDENTIALS (REQUIRED)
+# ============================================
+DISCORD_BOT_TOKEN=YOUR_DISCORD_BOT_TOKEN_HERE
+DISCORD_CLIENT_ID=YOUR_DISCORD_CLIENT_ID_HERE
+DISCORD_CLIENT_SECRET=YOUR_DISCORD_CLIENT_SECRET_HERE
+DISCORD_GUILD_ID=YOUR_DISCORD_GUILD_ID_HERE
+
+# ============================================
+# DISCORD OWNER CONFIGURATION (REQUIRED)
+# ============================================
+DISCORD_OWNER_ID=YOUR_DISCORD_OWNER_ID_HERE
+
+# ============================================
+# GAME WEBHOOK URLS (REQUIRED)
+# ============================================
+GAME_CHAT_WEBHOOK=YOUR_GAME_CHAT_WEBHOOK_URL_HERE
+GAME_LOGS_WEBHOOK=YOUR_GAME_LOGS_WEBHOOK_URL_HERE
+
+# ============================================
+# DISCORD SERVER CONFIGURATION
+# ============================================
+DISCORD_INVITE_URL=https://discord.gg/vxt64amrgt
+
+# ============================================
+# BOT CONFIGURATION
+# ============================================
+BOT_PREFIX=!
+BOT_STATUS=online
+BOT_ACTIVITY_TYPE=PLAYING
+BOT_ACTIVITY_NAME=GRiD - 3D Video Game
+
+# ============================================
+# SERVER CONFIGURATION
+# ============================================
+SERVER_STATUS=online
+SERVER_NAME=GRiD Game Server
+
+# ============================================
+# OPTIONAL: DATABASE CONFIGURATION
+# ============================================
+# Uncomment if you want to use a database
+# DATABASE_URL=sqlite:./data/grid_bot.db
+# DATABASE_TYPE=sqlite
+
+# ============================================
+# OPTIONAL: LOGGING CONFIGURATION
+# ============================================
+LOG_LEVEL=info
+LOG_FILE=./logs/bot.log
+LOG_CONSOLE=true
+
+# ============================================
+# OPTIONAL: API CONFIGURATION
+# ============================================
+# API_PORT=3001
+# API_ENABLED=false
+
+# ============================================
+# OPTIONAL: FEATURE FLAGS
+# ============================================
+ENABLE_PLAYER_STATS=true
+ENABLE_LEADERBOARD=true
+ENABLE_ACHIEVEMENTS=true
+ENABLE_PLANETS=true
+ENABLE_MODS=true
+

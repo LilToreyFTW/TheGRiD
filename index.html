@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRiD - 3D Video Game</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-overlay" style="display: none;">
+        <div id="loading-screen-content">
+            <img id="startup-image-loading" src="videogame/game_images/startup/startup_image.png" alt="GRiD Loading">
+            <div id="loading-bar-container">
+                <div id="loading-bar-fill"></div>
+            </div>
+            <div id="loading-text-overlay">Loading GRiD...</div>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <div id="ui-overlay">
+            <div id="hud">
+                <div id="score">Score: <span id="score-value">0</span></div>
+                <div id="health">Health: <span id="health-value">100</span></div>
+                <div id="bikes">Bikes: <span id="bikes-value">0</span></div>
+                <div id="level">Level: <span id="level-value">1</span></div>
+                <div id="fps">FPS: <span id="fps-value">60</span></div>
+            </div>
+            <div id="start-screen">
+                <h1>GRiD</h1>
+                <p>3D Video Game</p>
+                <button id="start-button">Start Game</button>
+                <div id="instructions">
+                    <h3>Controls:</h3>
+                    <p>WASD - Move</p>
+                    <p>Mouse - Look Around</p>
+                    <p>Space - Jump</p>
+                    <p>Shift - Run</p>
+                    <p>P - Open Printer (near HUB tower)</p>
+                    <p>M - Mod Manager</p>
+                    <p>L - Leaderboard</p>
+                    <p>T - Teleportation System</p>
+                    <p>N - Toggle Minimap</p>
+                    <p>ESC - Pause Menu</p>
+                    <p style="color: #4CAF50; margin-top: 10px;"><strong>🌍 Fully Open World - Explore Forever!</strong></p>
+                    <p style="margin-top: 15px;">
+                        <a href="https://discord.gg/vxt64amrgt" target="_blank" style="color: #5865F2; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 20px;">💬</span> Join Our Discord Server
+                        </a>
+                    </p>
+                </div>
+            </div>
+            <div id="game-over-screen" style="display: none;">
+                <h1>Game Over</h1>
+                <p>Final Score: <span id="final-score">0</span></p>
+                <button id="restart-button">Restart</button>
+            </div>
+        </div>
+        <canvas id="game-canvas"></canvas>
+    </div>
+
+    <!-- Three.js Library -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <!-- Game Scripts -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
+

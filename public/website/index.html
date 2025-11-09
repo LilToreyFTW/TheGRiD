@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRiD - Official Game Website</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1>GRiD</h1>
+                <span>3D Video Game</span>
+            </div>
+            <nav class="nav">
+                <a href="#home" class="nav-link active" data-tab="home">Home</a>
+                <a href="#download" class="nav-link" data-tab="download">Download</a>
+                <a href="#mods" class="nav-link" data-tab="mods">Mods</a>
+                <a href="#forums" class="nav-link" data-tab="forums">Forums</a>
+                <a href="#about" class="nav-link" data-tab="about">About</a>
+                <a href="https://discord.gg/vxt64amrgt" target="_blank" class="nav-link discord-nav-link" style="background: #5865F2; color: white;">
+                    💬 Discord
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Home Tab -->
+        <section id="home" class="tab-content active">
+            <div class="hero">
+                <h2>Welcome to GRiD</h2>
+                <p>A 3D video game featuring 10,000 unique moped bikes, multiplayer action, and a 3D printer system!</p>
+                
+                <!-- ADDED - Discord Widget -->
+                <div class="discord-widget" style="margin: 30px auto; max-width: 600px; padding: 20px; background: rgba(88, 101, 242, 0.1); border: 2px solid #5865F2; border-radius: 10px; text-align: center;">
+                    <h3 style="color: #5865F2; margin-bottom: 15px;">💬 Join Our Discord Community</h3>
+                    <p style="color: #00ffff; margin-bottom: 20px;">Connect with other players, share mods, get updates, and join the GRiD community!</p>
+                    <a href="https://discord.gg/vxt64amrgt" target="_blank" class="discord-button" style="display: inline-block; padding: 12px 30px; background: #5865F2; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; transition: all 0.3s ease; box-shadow: 0 0 20px rgba(88, 101, 242, 0.5);">
+                        Join Discord Server
+                    </a>
+                    <p style="margin-top: 15px; font-size: 14px; color: #888;">
+                        <a href="https://discord.gg/vxt64amrgt" target="_blank" style="color: #5865F2;">https://discord.gg/vxt64amrgt</a>
+                    </p>
+                </div>
+                
+                <div class="hero-features">
+                    <div class="feature">
+                        <h3>10K Unique Bikes</h3>
+                        <p>Explore a grid of 10,000 uniquely designed moped bikes</p>
+                    </div>
+                    <div class="feature">
+                        <h3>Multiplayer</h3>
+                        <p>Play with friends on a single server</p>
+                    </div>
+                    <div class="feature">
+                        <h3>3D Printer</h3>
+                        <p>Create bikes and weapons with the BORTtheBOT printer</p>
+                    </div>
+                    <div class="feature">
+                        <h3>Mod Support</h3>
+                        <p>Install custom mods to enhance your experience</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Download Tab -->
+        <section id="download" class="tab-content">
+            <div class="container">
+                <h2>Download GRiD</h2>
+                <div class="download-section">
+                    <div class="download-card">
+                        <h3>Windows EXE</h3>
+                        <p>Version 1.0.0</p>
+                        <button class="btn-download" onclick="downloadGame('windows')">
+                            ⬇️ Download EXE
+                        </button>
+                        <p class="file-size">~200 MB</p>
+                        <div class="download-progress">
+                            <div class="progress-text">Preparing download...</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="download-card">
+                        <h3>Windows Portable</h3>
+                        <p>No Installation Required</p>
+                        <button class="btn-download" onclick="downloadGame('portable')">
+                            ⬇️ Download Portable
+                        </button>
+                        <p class="file-size">~200 MB</p>
+                        <div class="download-progress">
+                            <div class="progress-text">Preparing download...</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="download-card">
+                        <h3>Web Version</h3>
+                        <p>Play in Browser</p>
+                        <button class="btn-download" onclick="playWeb()">
+                            🎮 Play Now
+                        </button>
+                        <p class="file-size">No Download Required</p>
+                    </div>
+                </div>
+                <div class="system-requirements">
+                    <h3>System Requirements</h3>
+                    <div class="requirements">
+                        <div>
+                            <h4>Minimum</h4>
+                            <ul>
+                                <li>OS: Windows 10/11</li>
+                                <li>CPU: Intel i5 or AMD equivalent</li>
+                                <li>RAM: 8 GB</li>
+                                <li>GPU: DirectX 11 compatible</li>
+                                <li>Storage: 500 MB</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>Recommended</h4>
+                            <ul>
+                                <li>OS: Windows 11</li>
+                                <li>CPU: Intel i7 or AMD Ryzen 7</li>
+                                <li>RAM: 16 GB</li>
+                                <li>GPU: NVIDIA RTX 3060 or better</li>
+                                <li>Storage: 1 GB</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Mods Tab -->
+        <section id="mods" class="tab-content">
+            <div class="container">
+                <h2>Game Mods</h2>
+                <div class="mods-header">
+                    <div class="mod-search">
+                        <input type="text" id="mod-search" placeholder="Search mods...">
+                    </div>
+                    <button class="btn-upload" onclick="showUploadModal()">Upload Mod</button>
+                </div>
+                
+                <div class="mods-grid" id="mods-grid">
+                    <!-- Mods will be loaded here -->
+                </div>
+
+                <!-- Upload Mod Modal -->
+                <div id="upload-modal" class="modal">
+                    <div class="modal-content">
+                        <span class="close" onclick="closeUploadModal()">&times;</span>
+                        <h2>Upload Mod</h2>
+                        <form id="mod-upload-form" onsubmit="uploadMod(event)">
+                            <div class="form-group">
+                                <label>Mod Name</label>
+                                <input type="text" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea name="description" rows="4" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Version</label>
+                                <input type="text" name="version" placeholder="1.0.0" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Mod File (.zip)</label>
+                                <input type="file" name="file" accept=".zip" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Thumbnail Image</label>
+                                <input type="file" name="thumbnail" accept="image/*">
+                            </div>
+                            <button type="submit" class="btn-submit">Upload Mod</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Forums Tab -->
+        <section id="forums" class="tab-content">
+            <div class="container">
+                <h2>Community Forums</h2>
+                <div class="forums-container">
+                    <div class="forum-categories">
+                        <div class="forum-category">
+                            <h3>General Discussion</h3>
+                            <p>Talk about the game, share experiences</p>
+                            <span class="post-count">12 topics</span>
+                        </div>
+                        <div class="forum-category">
+                            <h3>Modding</h3>
+                            <p>Discuss mods, get help, share creations</p>
+                            <span class="post-count">8 topics</span>
+                        </div>
+                        <div class="forum-category">
+                            <h3>Technical Support</h3>
+                            <p>Get help with technical issues</p>
+                            <span class="post-count">5 topics</span>
+                        </div>
+                        <div class="forum-category">
+                            <h3>Suggestions</h3>
+                            <p>Share your ideas for the game</p>
+                            <span class="post-count">15 topics</span>
+                        </div>
+                    </div>
+                    <div class="forum-posts">
+                        <h3>Recent Posts</h3>
+                        <div class="post-list" id="post-list">
+                            <!-- Posts will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Tab -->
+        <section id="about" class="tab-content">
+            <div class="container">
+                <h2>About GRiD</h2>
+                <div class="about-content">
+                    <p>GRiD is an immersive 3D video game featuring a massive world with 10,000 unique moped bikes, multiplayer functionality, and an advanced 3D printing system.</p>
+                    <h3>Features</h3>
+                    <ul>
+                        <li>10,000 unique moped bikes with different body kits</li>
+                        <li>Multiplayer server - everyone sees everyone</li>
+                        <li>BORTtheBOT 3D printer system</li>
+                        <li>Advanced graphics with ray tracing support</li>
+                        <li>NVIDIA RTX GPU optimization</li>
+                        <li>Mod support for custom content</li>
+                    </ul>
+                    <h3>Contact</h3>
+                    <p>Email: support@gridgame.com</p>
+                    <p>
+                        <a href="https://discord.gg/vxt64amrgt" target="_blank" style="color: #5865F2; text-decoration: none; font-weight: bold;">
+                            💬 Discord: discord.gg/vxt64amrgt
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 GRiD Game. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script>
+        // Make downloadGame function globally accessible
+        window.downloadGame = function(platform) {
+            if (platform === 'windows' || platform === 'portable') {
+                // Try to download from server
+                const fileName = platform === 'portable' ? 'GRiD-Portable.exe' : 'GRiD-Setup.exe';
+                const downloadUrl = `/downloads/${fileName}`;
+                
+                // Show progress
+                const downloadCard = event.target.closest('.download-card');
+                const progressDiv = downloadCard.querySelector('.download-progress');
+                if (progressDiv) {
+                    progressDiv.classList.add('active');
+                    const progressBar = progressDiv.querySelector('.progress-fill');
+                    const progressText = progressDiv.querySelector('.progress-text');
+                    
+                    // Simulate progress
+                    let progress = 0;
+                    const interval = setInterval(() => {
+                        progress += Math.random() * 15;
+                        if (progress > 100) progress = 100;
+                        progressBar.style.width = progress + '%';
+                        progressText.textContent = `Downloading... ${Math.floor(progress)}%`;
+                        
+                        if (progress >= 100) {
+                            clearInterval(interval);
+                            progressText.textContent = 'Download Complete!';
+                            
+                            // Trigger download
+                            const link = document.createElement('a');
+                            link.href = downloadUrl;
+                            link.download = fileName;
+                            link.click();
+                            
+                            setTimeout(() => {
+                                progressDiv.classList.remove('active');
+                            }, 2000);
+                        }
+                    }, 200);
+                } else {
+                    // Fallback: direct download
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = fileName;
+                    link.click();
+                }
+            }
+        };
+    </script>
+</body>
+</html>
+

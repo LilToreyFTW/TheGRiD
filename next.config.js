@@ -35,6 +35,11 @@ const nextConfig = {
         source: '/css/:path*',
         destination: '/css/:path*',
       },
+      // Rewrite /website to serve the HTML file
+      {
+        source: '/website',
+        destination: '/website/index.html',
+      },
     ];
   },
   // Headers for security

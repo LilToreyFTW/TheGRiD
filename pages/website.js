@@ -1,24 +1,31 @@
 import Head from 'next/head';
+import { useEffect } from 'react';
 
 export default function WebsitePage() {
+  useEffect(() => {
+    // Redirect to the actual website HTML file
+    if (typeof window !== 'undefined') {
+      window.location.href = '/website/index.html';
+    }
+  }, []);
+
   return (
     <>
       <Head>
         <title>GRiD - Official Website</title>
         <meta name="description" content="GRiD Game Official Website" />
       </Head>
-      <iframe 
-        src="/website/index.html" 
-        style={{
-          width: '100%',
-          height: '100vh',
-          border: 'none',
-          position: 'fixed',
-          top: 0,
-          left: 0
-        }}
-        title="GRiD Website"
-      />
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        background: '#000',
+        color: '#00ffff',
+        fontFamily: 'monospace'
+      }}>
+        <p>Redirecting to website...</p>
+      </div>
     </>
   );
 }

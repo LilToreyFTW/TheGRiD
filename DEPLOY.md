@@ -87,12 +87,15 @@ git push -u origin main
    GAME_CHAT_WEBHOOK=YOUR_GAME_CHAT_WEBHOOK_URL_HERE
    GAME_LOGS_WEBHOOK=YOUR_GAME_LOGS_WEBHOOK_URL_HERE
    NEXT_PUBLIC_DISCORD_INVITE=https://discord.gg/vxt64amrgt
+   NEXT_PUBLIC_GAME_SERVER_URL=wss://your-ultra-server.com/game
    ```
    
    **Important:** Add these for:
    - ✅ Production
    - ✅ Preview
    - ✅ Development
+   
+   **Note:** `NEXT_PUBLIC_GAME_SERVER_URL` should point to your ULTRA-hosted game server. The game server is hosted separately on ULTRA, while the website is deployed on Vercel.
 
 5. **Deploy:**
    - Click "Deploy"
@@ -117,6 +120,35 @@ vercel
 # Deploy to production
 vercel --prod
 ```
+
+### Step 5.5: Configure ULTRA Game Server
+
+**The game server is hosted on ULTRA**, which provides the infrastructure for multiplayer gameplay.
+
+1. **Deploy Game Server to ULTRA:**
+   - Upload `server/gameServer.js` to ULTRA
+   - Configure ULTRA environment variables:
+     ```
+     PORT=3001
+     NODE_ENV=production
+     MAX_PLAYERS=100
+     ```
+   - Set up SSL/TLS for secure WebSocket connections (`wss://`)
+
+2. **Get ULTRA Server URL:**
+   - ULTRA will provide a server URL (e.g., `your-server.ultra.com`)
+   - WebSocket endpoint: `wss://your-server.ultra.com/game`
+
+3. **Update Vercel Environment Variable:**
+   - In Vercel dashboard, set `NEXT_PUBLIC_GAME_SERVER_URL` to your ULTRA server URL
+   - Example: `wss://your-server.ultra.com/game`
+
+4. **Verify Server Connection:**
+   - Test WebSocket connection from game client
+   - Check Discord bot can connect to server
+   - Monitor server status via ULTRA dashboard
+
+For detailed ULTRA hosting information, see `ULTRA-HOSTING.md`.
 
 ### Step 6: Verify Deployment
 

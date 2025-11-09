@@ -79,7 +79,11 @@ CoresNewGame/
 
 ## 🌐 Deployment
 
-### Vercel Deployment
+### Server Hosting
+
+**The GRiD game server is hosted on ULTRA**, which provides the infrastructure for the entire game server. All players connect to the same ULTRA-hosted server when they launch the game.
+
+### Vercel Deployment (Website)
 
 1. **Push to GitHub:**
    ```bash
@@ -101,6 +105,7 @@ CoresNewGame/
      - `DISCORD_OWNER_ID`
      - `GAME_CHAT_WEBHOOK`
      - `GAME_LOGS_WEBHOOK`
+     - `NEXT_PUBLIC_GAME_SERVER_URL` (ULTRA server URL)
    - Deploy!
 
 3. **Or use Vercel CLI:**

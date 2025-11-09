@@ -64,10 +64,8 @@ import { CashSystem } from './cashSystem.js';
 import { JobSystem } from './jobSystem.js';
 // ADDED - Admin menu
 import { AdminMenuSystem } from './adminMenu.js';
-// ADDED - Vehicle spawner
-import { VehicleSpawnerSystem } from './vehicleSpawner.js';
-
-class GameApp {
+// ADDED - Game server client
+import { GameServerClient } from './gameServerClient.js';
     constructor() {
         this.canvas = document.getElementById('game-canvas');
         this.scene = new THREE.Scene();
@@ -155,8 +153,24 @@ class GameApp {
         this.jobSystem = null;
         // ADDED - Admin menu
         this.adminMenu = null;
+        // ADDED - Game server client (connects to WebSocket server)
+        this.gameServerClient = null;
+        const serverUrl = process.env.NEXT_PUBLIC_GAME_SERVER_URL || 'ws://localhost:3001/game';
+        if (typeof WebSocket !== 'undefined') {
+            this.gameServerClient = new GameServerClient(serverUrl);
+            this.gameServerClient.onConnect(() => {
+                console.log('✅ Connected to game server');
+            });
+            this.gameServerClient.onMessage((data) => {
+                this.handleServerMessage(data);
+            });
+            this.gameServerClient.connect();
+        }
+        
         // ADDED - Vehicle spawner
         this.vehicleSpawner = null;
+        // ADDED - Game server client (connects to WebSocket server)
+        this.gameServerClient = null;
         // ADDED - Player permissions
         this.playerPermissions = {};
         
@@ -341,6 +355,30 @@ class GameApp {
 
         // ADDED - Initialize Vehicle Spawner
         this.vehicleSpawner = new VehicleSpawnerSystem(this.scene, this);
+
+        // ADDED - Initialize Game Server Client (connects to WebSocket server)
+        const serverUrl = process.env.NEXT_PUBLIC_GAME_SERVER_URL || 
+                         (typeof window !== 'undefined' && window.location.protocol === 'https:' 
+                          ? 'wss://game.yourdomain.com/game' 
+                          : 'ws://localhost:3001/game');
+        
+        if (typeof WebSocket !== 'undefined') {
+            try {
+                this.gameServerClient = new GameServerClient(serverUrl);
+                this.gameServerClient.onConnect(() => {
+                    console.log('✅ Connected to game server');
+                });
+                this.gameServerClient.onDisconnect(() => {
+                    console.log('⚠️ Disconnected from game server');
+                });
+                this.gameServerClient.onMessage((data) => {
+                    this.handleServerMessage(data);
+                });
+                this.gameServerClient.connect();
+            } catch (error) {
+                console.warn('⚠️ Could not initialize game server client:', error);
+            }
+        }
 
         // ADDED - Initialize Role Permissions System
         this.rolePermissions = new RolePermissionsSystem(this);
@@ -699,6 +737,30 @@ class GameApp {
         this.player.enableControls();
     }
 
+    handleServerMessage(data) {
+        switch (data.type) {
+            case 'player_join':
+                console.log(`Player joined: ${data.player.username}`);
+                // Add player to scene
+                break;
+            case 'player_leave':
+                console.log(`Player left: ${data.playerId}`);
+                // Remove player from scene
+                break;
+            case 'player_update':
+                // Update other player's position
+                // This would update remote players in the scene
+                break;
+            case 'game_state':
+                // Update game state with server data
+                break;
+            case 'chat':
+                // Display chat message
+                console.log(`[${data.username}]: ${data.message}`);
+                break;
+        }
+    }
+
     animate() {
         requestAnimationFrame(() => this.animate());
 
@@ -710,6 +772,16 @@ class GameApp {
         }
 
         const deltaTime = this.clock.getDelta();
+
+        // ADDED - Update game server with player position
+        if (this.gameServerClient && this.gameServerClient.connected && this.player && this.player.yawObject) {
+            const position = this.player.yawObject.position;
+            const rotation = this.player.yawObject.rotation;
+            this.gameServerClient.updatePosition(
+                { x: position.x, y: position.y, z: position.z },
+                { x: rotation.x, y: rotation.y, z: rotation.z }
+            );
+        }
 
         // Update player
         this.player.update(deltaTime);

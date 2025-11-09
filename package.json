@@ -14,6 +14,8 @@
     "bot:dev": "nodemon discord-bot/index.js",
     "game:serve": "npx serve . -p 3000",
     "game:dev": "npx serve . -p 3000",
+    "server": "node server/gameServer.js",
+    "server:dev": "nodemon server/gameServer.js",
     "electron": "electron .",
     "electron:dev": "cross-env NODE_ENV=development electron .",
     "build:exe": "electron-builder --win",
@@ -21,25 +23,26 @@
     "build:all": "electron-builder --win --mac --linux"
   },
   "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
     "next": "^14.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "three": "^0.160.0",
-    "discord.js": "^14.14.1",
-    "dotenv": "^16.3.1"
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.46",
     "@types/react-dom": "^18.2.18",
     "@types/three": "^0.160.0",
-    "typescript": "^5.3.3",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
     "eslint": "^8.56.0",
     "eslint-config-next": "^14.0.4",
     "nodemon": "^3.0.2",
     "serve": "^14.2.1",
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+    "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=18.0.0",
@@ -82,11 +85,15 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "artifactName": "GRiD-Setup-${version}-${arch}.${ext}",

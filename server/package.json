@@ -1,0 +1,21 @@
+// Server package.json for standalone WebSocket server deployment
+{
+  "name": "grid-game-server",
+  "version": "1.0.0",
+  "description": "GRiD Game WebSocket Server",
+  "main": "gameServer.js",
+  "scripts": {
+    "start": "node gameServer.js",
+    "dev": "nodemon gameServer.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

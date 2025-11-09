@@ -12,7 +12,8 @@ class GridDiscordBot {
                 GatewayIntentBits.Guilds,
                 GatewayIntentBits.GuildMessages,
                 GatewayIntentBits.MessageContent,
-                GatewayIntentBits.GuildMembers
+                GatewayIntentBits.GuildMembers,
+                GatewayIntentBits.GuildPresences
             ]
         });
         
@@ -20,9 +21,88 @@ class GridDiscordBot {
         this.clientId = process.env.DISCORD_CLIENT_ID || '';
         this.guildId = process.env.DISCORD_GUILD_ID || '';
         
-        // ADDED - Owner configuration
-        this.ownerId = process.env.DISCORD_OWNER_ID || '1368087024401252393'; // Discord Owner and Game Owner User ID
-        this.defaultGuildId = '1436947681560760414'; // Default Guild ID
+        // ADDED - Role definitions
+        this.roles = {
+            NOVICE_GAME_JOINER: 'Novice Game Joiner',
+            CIVILIAN_DISCORD: 'Civilian Discord Role',
+            OWNER_PANEL: 'Owner Panel Role',
+            OWNER_PANEL_SERVER: 'Owner panel server room role',
+            GAME_OWNER: 'Game Owner role',
+            OWNER_MENU: 'Owner Menu Role',
+            ADMIN_ACCESS: 'Admin access',
+            ADMIN_MENU: 'Admin Menu access',
+            ADMIN_VEHICLE: 'Admin Vehicle Menu',
+            CIVILIAN: 'Civilian Role'
+        };
+        
+        // ADDED - Role permissions mapping
+        this.rolePermissions = {
+            'Game Owner role': {
+                inGame: ['all_doors', 'all_chests', 'weapon_chests', 'free_xp', 'admin_menu', 'owner_menu', 'vehicle_spawner', 'unlimited_cash'],
+                discord: ['all_commands', 'manage_roles', 'manage_server']
+            },
+            'Owner Menu Role': {
+                inGame: ['owner_menu', 'all_doors', 'all_chests', 'weapon_chests'],
+                discord: ['owner_commands']
+            },
+            'Owner Panel Role': {
+                inGame: ['owner_panel'],
+                discord: ['panel_access']
+            },
+            'Owner panel server room role': {
+                inGame: ['server_room'],
+                discord: ['server_room_access']
+            },
+            'Admin access': {
+                inGame: ['all_doors', 'all_chests', 'weapon_chests', 'free_xp'],
+                discord: ['admin_commands']
+            },
+            'Admin Menu access': {
+                inGame: ['admin_menu', 'all_doors', 'all_chests'],
+                discord: ['admin_menu_commands']
+            },
+            'Admin Vehicle Menu': {
+                inGame: ['vehicle_spawner', 'all_doors'],
+                discord: ['vehicle_commands']
+            },
+            'Civilian Role': {
+                inGame: ['explore', 'jobs', 'cash_rewards', '150k_every_6h'],
+                discord: ['civilian_commands']
+            },
+            'Civilian Discord Role': {
+                inGame: ['basic_access'],
+                discord: ['basic_discord']
+            },
+            'Novice Game Joiner': {
+                inGame: ['tutorial', 'basic_access'],
+                discord: ['welcome']
+            }
+        };
+        
+        // ADDED - Character definitions
+        this.startingCharacters = {
+            'Hunter Cowboy': {
+                name: 'Hunter Cowboy',
+                description: 'Out in the wilderness mid hunting a deer. Uses an ATV to get around.',
+                spawnLocation: { x: 0, y: 2, z: 0 },
+                vehicle: 'atv',
+                startingItems: ['hunting_rifle', 'atv_key']
+            },
+            'Astronaught Cowboy': {
+                name: 'Astronaught Cowboy',
+                description: 'Mid west desert field. A flock of horses roam and circle. Must tame the black horse.',
+                spawnLocation: { x: 100, y: 2, z: 100 },
+                vehicle: 'horse',
+                startingItems: ['lasso', 'saddle']
+            },
+            'Space Astronaught Cowboy': {
+                name: 'Space Astronaught Cowboy',
+                description: 'Starts out living abandoned in a pod in space, lost.',
+                spawnLocation: { x: -100, y: 50, z: -100 },
+                vehicle: 'space_pod',
+                startingItems: ['space_suit', 'pod_key']
+            }
+        };
         
         // Use provided IDs if env vars not set (fallback for quick setup)
         if (!this.token) this.token = 'YOUR_DISCORD_BOT_TOKEN_HERE';
@@ -38,7 +118,10 @@ class GridDiscordBot {
             players: new Map(),
             onlinePlayers: new Map(), // Track currently online players
             leaderboard: [],
-            serverStatus: 'online'
+            serverStatus: 'online',
+            characters: new Map(), // User characters
+            playerRoles: new Map(), // Discord roles -> game permissions
+            pendingCommands: new Map() // Commands from Discord to execute in game
         };
         
         this.apiPort = process.env.API_PORT || 3001;
@@ -59,6 +142,9 @@ class GridDiscordBot {
             
             // ADDED - Send startup notification to owner
             this.notifyOwner('✅ GRiD Bot is now online!');
+            
+            // ADDED - Setup role monitoring
+            this.setupRoleMonitoring();
         });
 
         this.client.on('interactionCreate', async interaction => {
@@ -71,6 +157,171 @@ class GridDiscordBot {
             if (message.author.bot) return;
             // Handle game chat relay if needed
         });
+        
+        // ADDED - Handle new member joins
+        this.client.on('guildMemberAdd', async member => {
+            await this.handleNewMember(member);
+        });
+        
+        // ADDED - Handle member updates (role changes)
+        this.client.on('guildMemberUpdate', async (oldMember, newMember) => {
+            await this.handleMemberRoleUpdate(oldMember, newMember);
+        });
+    }
+    
+    async setupRoleMonitoring() {
+        // ADDED - Ensure all roles exist, create if missing
+        const guild = await this.client.guilds.fetch(this.guildId);
+        if (!guild) {
+            console.warn('⚠️ Could not fetch guild for role setup');
+            return;
+        }
+        
+        const existingRoles = await guild.roles.fetch();
+        const roleNames = Object.values(this.roles);
+        
+        for (const roleName of roleNames) {
+            const role = existingRoles.find(r => r.name === roleName);
+            if (!role) {
+                try {
+                    await guild.roles.create({
+                        name: roleName,
+                        color: this.getRoleColor(roleName),
+                        mentionable: false,
+                        reason: 'Auto-created role for GRiD game'
+                    });
+                    console.log(`✅ Created role: ${roleName}`);
+                } catch (error) {
+                    console.error(`❌ Failed to create role ${roleName}:`, error);
+                }
+            }
+        }
+        
+        // ADDED - Assign Game Owner role to owner
+        try {
+            const ownerMember = await guild.members.fetch(this.ownerId);
+            const gameOwnerRole = existingRoles.find(r => r.name === this.roles.GAME_OWNER);
+            if (ownerMember && gameOwnerRole && !ownerMember.roles.cache.has(gameOwnerRole.id)) {
+                await ownerMember.roles.add(gameOwnerRole);
+                console.log(`✅ Assigned Game Owner role to owner`);
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not assign owner role:', error.message);
+        }
+    }
+    
+    getRoleColor(roleName) {
+        const colors = {
+            'Game Owner role': 0xff0000,
+            'Owner Menu Role': 0xff6600,
+            'Owner Panel Role': 0xff9900,
+            'Admin access': 0x00ff00,
+            'Admin Menu access': 0x00cc00,
+            'Admin Vehicle Menu': 0x009900,
+            'Civilian Role': 0x0099ff,
+            'Civilian Discord Role': 0x6699ff,
+            'Novice Game Joiner': 0xcccccc
+        };
+        return colors[roleName] || 0x99aab5;
+    }
+    
+    async handleNewMember(member) {
+        // ADDED - Auto-assign roles to new Discord members
+        try {
+            const guild = member.guild;
+            const roles = await guild.roles.fetch();
+            
+            // Assign Novice Game Joiner role
+            const noviceRole = roles.find(r => r.name === this.roles.NOVICE_GAME_JOINER);
+            if (noviceRole) {
+                await member.roles.add(noviceRole);
+                console.log(`✅ Assigned ${this.roles.NOVICE_GAME_JOINER} to ${member.user.tag}`);
+            }
+            
+            // Assign Civilian Discord Role
+            const civilianDiscordRole = roles.find(r => r.name === this.roles.CIVILIAN_DISCORD);
+            if (civilianDiscordRole) {
+                await member.roles.add(civilianDiscordRole);
+                console.log(`✅ Assigned ${this.roles.CIVILIAN_DISCORD} to ${member.user.tag}`);
+            }
+            
+            // Send welcome message
+            await this.sendToGameLogs(
+                '👋 New Member Joined',
+                `**${member.user.tag}** joined the Discord server`,
+                {
+                    'User ID': member.user.id,
+                    'Roles Assigned': `${this.roles.NOVICE_GAME_JOINER}, ${this.roles.CIVILIAN_DISCORD}`
+                },
+                0x4CAF50
+            );
+            
+            // Send welcome DM
+            try {
+                await member.send(`Welcome to GRiD! 🎮\n\nYou've been assigned:\n- ${this.roles.NOVICE_GAME_JOINER}\n- ${this.roles.CIVILIAN_DISCORD}\n\nDownload the game and start playing!`);
+            } catch (error) {
+                // User might have DMs disabled
+            }
+        } catch (error) {
+            console.error('Error handling new member:', error);
+        }
+    }
+    
+    async handleMemberRoleUpdate(oldMember, newMember) {
+        // ADDED - Monitor role changes and update game permissions
+        const oldRoles = oldMember.roles.cache.map(r => r.name);
+        const newRoles = newMember.roles.cache.map(r => r.name);
+        
+        const addedRoles = newRoles.filter(r => !oldRoles.includes(r));
+        const removedRoles = oldRoles.filter(r => !newRoles.includes(r));
+        
+        if (addedRoles.length > 0 || removedRoles.length > 0) {
+            console.log(`Role update for ${newMember.user.tag}:`);
+            if (addedRoles.length > 0) console.log(`  Added: ${addedRoles.join(', ')}`);
+            if (removedRoles.length > 0) console.log(`  Removed: ${removedRoles.join(', ')}`);
+            
+            // Notify game about role changes
+            await this.notifyGameRoleChange(newMember.user.id, newRoles);
+        }
+    }
+    
+    async notifyGameRoleChange(userId, roles) {
+        // ADDED - Send role update to game API
+        try {
+            await fetch(`http://localhost:3001/api/player/roles`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId,
+                    roles,
+                    permissions: this.getPermissionsForRoles(roles)
+                })
+            });
+        } catch (error) {
+            // Game might not be running
+        }
+    }
+    
+    getPermissionsForRoles(roleNames) {
+        // ADDED - Get combined permissions for multiple roles
+        const permissions = {
+            inGame: [],
+            discord: []
+        };
+        
+        for (const roleName of roleNames) {
+            const rolePerms = this.rolePermissions[roleName];
+            if (rolePerms) {
+                permissions.inGame.push(...rolePerms.inGame);
+                permissions.discord.push(...rolePerms.discord);
+            }
+        }
+        
+        // Remove duplicates
+        permissions.inGame = [...new Set(permissions.inGame)];
+        permissions.discord = [...new Set(permissions.discord)];
+        
+        return permissions;
     }
 
     async setupCommands() {
@@ -87,6 +338,91 @@ class GridDiscordBot {
             new SlashCommandBuilder()
                 .setName('online')
                 .setDescription('View currently online players'),
+            
+            // ADDED - Role Management Commands
+            new SlashCommandBuilder()
+                .setName('role')
+                .setDescription('Manage player roles')
+                .addSubcommand(subcommand =>
+                    subcommand
+                        .setName('assign')
+                        .setDescription('Assign a role to a user')
+                        .addUserOption(option =>
+                            option.setName('user')
+                                .setDescription('User to assign role to')
+                                .setRequired(true))
+                        .addStringOption(option =>
+                            option.setName('role')
+                                .setDescription('Role to assign')
+                                .setRequired(true)
+                                .addChoices(
+                                    { name: 'Novice Game Joiner', value: 'Novice Game Joiner' },
+                                    { name: 'Civilian Discord Role', value: 'Civilian Discord Role' },
+                                    { name: 'Civilian Role', value: 'Civilian Role' },
+                                    { name: 'Admin access', value: 'Admin access' },
+                                    { name: 'Admin Menu access', value: 'Admin Menu access' },
+                                    { name: 'Admin Vehicle Menu', value: 'Admin Vehicle Menu' },
+                                    { name: 'Owner Menu Role', value: 'Owner Menu Role' },
+                                    { name: 'Game Owner role', value: 'Game Owner role' }
+                                ))),
+            
+            new SlashCommandBuilder()
+                .setName('character')
+                .setDescription('Character management')
+                .addSubcommand(subcommand =>
+                    subcommand
+                        .setName('create')
+                        .setDescription('Create a new character')
+                        .addStringOption(option =>
+                            option.setName('name')
+                                .setDescription('Character name')
+                                .setRequired(true))
+                        .addStringOption(option =>
+                            option.setName('type')
+                                .setDescription('Starting character type')
+                                .setRequired(true)
+                                .addChoices(
+                                    { name: 'Hunter Cowboy', value: 'Hunter Cowboy' },
+                                    { name: 'Astronaught Cowboy', value: 'Astronaught Cowboy' },
+                                    { name: 'Space Astronaught Cowboy', value: 'Space Astronaught Cowboy' }
+                                ))),
+            
+            new SlashCommandBuilder()
+                .setName('admin')
+                .setDescription('Admin commands')
+                .addSubcommand(subcommand =>
+                    subcommand
+                        .setName('spawn')
+                        .setDescription('Spawn item/vehicle (Admin only)')
+                        .addStringOption(option =>
+                            option.setName('type')
+                                .setDescription('What to spawn')
+                                .setRequired(true)
+                                .addChoices(
+                                    { name: 'Vehicle', value: 'vehicle' },
+                                    { name: 'Weapon', value: 'weapon' },
+                                    { name: 'Cash', value: 'cash' }
+                                ))
+                        .addStringOption(option =>
+                            option.setName('item')
+                                .setDescription('Item name')
+                                .setRequired(true))),
+            
+            new SlashCommandBuilder()
+                .setName('owner')
+                .setDescription('Owner commands (Game Owner only)')
+                .addSubcommand(subcommand =>
+                    subcommand
+                        .setName('givecash')
+                        .setDescription('Give cash to player')
+                        .addUserOption(option =>
+                            option.setName('user')
+                                .setDescription('User to give cash to')
+                                .setRequired(true))
+                        .addIntegerOption(option =>
+                            option.setName('amount')
+                                .setDescription('Amount of cash')
+                                .setRequired(true))),
             
             // Player Commands
             new SlashCommandBuilder()
@@ -240,6 +576,18 @@ class GridDiscordBot {
                     break;
                 case 'online':
                     await this.handleOnlinePlayers(interaction);
+                    break;
+                case 'role':
+                    await this.handleRoleCommand(interaction);
+                    break;
+                case 'character':
+                    await this.handleCharacterCommand(interaction);
+                    break;
+                case 'admin':
+                    await this.handleAdminCommand(interaction);
+                    break;
+                case 'owner':
+                    await this.handleOwnerCommand(interaction);
                     break;
                 case 'player':
                     await this.handlePlayer(interaction);
@@ -515,6 +863,208 @@ class GridDiscordBot {
         await interaction.reply({ embeds: [embed] });
     }
 
+    async handleRoleCommand(interaction) {
+        const subcommand = interaction.options.getSubcommand();
+        
+        if (subcommand === 'assign') {
+            // Check permissions
+            const isOwner = interaction.user.id === this.ownerId;
+            const isAdmin = interaction.member.permissions.has('ADMINISTRATOR');
+            const hasOwnerRole = interaction.member.roles.cache.some(r => 
+                r.name === this.roles.GAME_OWNER || r.name === this.roles.OWNER_MENU
+            );
+            
+            if (!isOwner && !isAdmin && !hasOwnerRole) {
+                await interaction.reply({ content: '❌ You do not have permission to assign roles!', ephemeral: true });
+                return;
+            }
+            
+            const targetUser = interaction.options.getUser('user');
+            const roleName = interaction.options.getString('role');
+            
+            try {
+                const guild = interaction.guild;
+                const member = await guild.members.fetch(targetUser.id);
+                const role = guild.roles.cache.find(r => r.name === roleName);
+                
+                if (!role) {
+                    await interaction.reply({ content: `❌ Role "${roleName}" not found!`, ephemeral: true });
+                    return;
+                }
+                
+                if (member.roles.cache.has(role.id)) {
+                    await interaction.reply({ content: `✅ ${targetUser.tag} already has the ${roleName} role!`, ephemeral: true });
+                    return;
+                }
+                
+                await member.roles.add(role);
+                await interaction.reply({ 
+                    content: `✅ Successfully assigned **${roleName}** to ${targetUser.tag}!`,
+                    ephemeral: true 
+                });
+                
+                // Notify game about role change
+                await this.notifyGameRoleChange(targetUser.id, member.roles.cache.map(r => r.name));
+            } catch (error) {
+                await interaction.reply({ content: `❌ Error assigning role: ${error.message}`, ephemeral: true });
+            }
+        }
+    }
+    
+    async handleCharacterCommand(interaction) {
+        const subcommand = interaction.options.getSubcommand();
+        
+        if (subcommand === 'create') {
+            const characterName = interaction.options.getString('name');
+            const characterType = interaction.options.getString('type');
+            
+            // Check if user has less than 3 characters
+            const userId = interaction.user.id;
+            const userCharacters = this.getUserCharacters(userId);
+            
+            if (userCharacters.length >= 3) {
+                await interaction.reply({ 
+                    content: '❌ You already have the maximum of 3 characters!', 
+                    ephemeral: true 
+                });
+                return;
+            }
+            
+            const characterData = this.startingCharacters[characterType];
+            if (!characterData) {
+                await interaction.reply({ content: '❌ Invalid character type!', ephemeral: true });
+                return;
+            }
+            
+            // Create character
+            const character = {
+                id: Date.now().toString(),
+                userId,
+                name: characterName,
+                type: characterType,
+                ...characterData,
+                cash: 0,
+                level: 1,
+                jobs: [],
+                createdAt: Date.now()
+            };
+            
+            this.saveUserCharacter(userId, character);
+            
+            const embed = new EmbedBuilder()
+                .setTitle('✅ Character Created!')
+                .setDescription(`**${characterName}** - ${characterType}`)
+                .setColor(0x4CAF50)
+                .addFields(
+                    { name: 'Starting Location', value: `X: ${characterData.spawnLocation.x}, Y: ${characterData.spawnLocation.y}, Z: ${characterData.spawnLocation.z}`, inline: false },
+                    { name: 'Starting Vehicle', value: characterData.vehicle, inline: true },
+                    { name: 'Starting Items', value: characterData.startingItems.join(', '), inline: false }
+                )
+                .setFooter({ text: `Characters: ${userCharacters.length + 1}/3` })
+                .setTimestamp();
+            
+            await interaction.reply({ embeds: [embed], ephemeral: true });
+        }
+    }
+    
+    async handleAdminCommand(interaction) {
+        // Check if user has admin role
+        const hasAdminRole = interaction.member.roles.cache.some(r => 
+            r.name === this.roles.ADMIN_ACCESS || 
+            r.name === this.roles.ADMIN_MENU ||
+            r.name === this.roles.GAME_OWNER
+        );
+        
+        if (!hasAdminRole) {
+            await interaction.reply({ content: '❌ You do not have admin permissions!', ephemeral: true });
+            return;
+        }
+        
+        const subcommand = interaction.options.getSubcommand();
+        
+        if (subcommand === 'spawn') {
+            const type = interaction.options.getString('type');
+            const item = interaction.options.getString('item');
+            
+            // Send spawn command to game
+            await this.sendSpawnCommandToGame(interaction.user.id, type, item);
+            
+            await interaction.reply({ 
+                content: `✅ Spawn command sent: ${type} - ${item}\n\nThis will spawn in-game when you launch the game.`,
+                ephemeral: true 
+            });
+        }
+    }
+    
+    async handleOwnerCommand(interaction) {
+        // Check if user is owner
+        const isOwner = interaction.user.id === this.ownerId;
+        const hasOwnerRole = interaction.member.roles.cache.some(r => 
+            r.name === this.roles.GAME_OWNER
+        );
+        
+        if (!isOwner && !hasOwnerRole) {
+            await interaction.reply({ content: '❌ Only the game owner can use this command!', ephemeral: true });
+            return;
+        }
+        
+        const subcommand = interaction.options.getSubcommand();
+        
+        if (subcommand === 'givecash') {
+            const targetUser = interaction.options.getUser('user');
+            const amount = interaction.options.getInteger('amount');
+            
+            // Send cash command to game
+            await this.sendCashCommandToGame(targetUser.id, amount);
+            
+            await interaction.reply({ 
+                content: `✅ Giving ${amount.toLocaleString()} cash to ${targetUser.tag}\n\nThis will be applied in-game.`,
+                ephemeral: true 
+            });
+        }
+    }
+    
+    async sendSpawnCommandToGame(userId, type, item) {
+        try {
+            await fetch(`http://localhost:3001/api/admin/spawn`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, type, item })
+            });
+        } catch (error) {
+            console.warn('Could not send spawn command to game:', error);
+        }
+    }
+    
+    async sendCashCommandToGame(userId, amount) {
+        try {
+            await fetch(`http://localhost:3001/api/admin/cash`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, amount })
+            });
+        } catch (error) {
+            console.warn('Could not send cash command to game:', error);
+        }
+    }
+    
+    getUserCharacters(userId) {
+        // Get user's characters from storage
+        const key = `characters_${userId}`;
+        const stored = this.gameData.characters || new Map();
+        return stored.get(userId) || [];
+    }
+    
+    saveUserCharacter(userId, character) {
+        // Save character to storage
+        if (!this.gameData.characters) {
+            this.gameData.characters = new Map();
+        }
+        const characters = this.gameData.characters.get(userId) || [];
+        characters.push(character);
+        this.gameData.characters.set(userId, characters);
+    }
+
     async handleAdmin(interaction) {
         // ADDED - Check if user is owner or has admin permissions
         const isOwner = interaction.user.id === this.ownerId;
@@ -775,6 +1325,100 @@ class GridDiscordBot {
                 const onlinePlayers = Array.from(this.gameData.onlinePlayers.values());
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true, players: onlinePlayers, count: onlinePlayers.length }));
+            } else if (pathname === '/api/player/roles' && method === 'POST') {
+                let body = '';
+                req.on('data', chunk => {
+                    body += chunk.toString();
+                });
+                req.on('end', () => {
+                    try {
+                        const data = JSON.parse(body);
+                        const { userId, roles, permissions } = data;
+                        this.gameData.playerRoles.set(userId, { roles, permissions });
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: true, message: 'Roles updated' }));
+                    } catch (error) {
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: false, error: error.message }));
+                    }
+                });
+            } else if (pathname === '/api/player/roles' && method === 'GET') {
+                const parsedUrl = url.parse(req.url, true);
+                const userId = parsedUrl.query.userId;
+                if (userId && this.gameData.playerRoles.has(userId)) {
+                    const roleData = this.gameData.playerRoles.get(userId);
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, ...roleData }));
+                } else {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, roles: [], permissions: { inGame: [], discord: [] } }));
+                }
+            } else if (pathname === '/api/admin/spawn' && method === 'POST') {
+                let body = '';
+                req.on('data', chunk => {
+                    body += chunk.toString();
+                });
+                req.on('end', () => {
+                    try {
+                        const data = JSON.parse(body);
+                        const { userId, type, item } = data;
+                        if (!this.gameData.pendingCommands) {
+                            this.gameData.pendingCommands = new Map();
+                        }
+                        if (!this.gameData.pendingCommands.has(userId)) {
+                            this.gameData.pendingCommands.set(userId, []);
+                        }
+                        this.gameData.pendingCommands.get(userId).push({
+                            type: 'spawn',
+                            data: { type, item },
+                            timestamp: Date.now()
+                        });
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: true, message: 'Spawn command queued' }));
+                    } catch (error) {
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: false, error: error.message }));
+                    }
+                });
+            } else if (pathname === '/api/admin/cash' && method === 'POST') {
+                let body = '';
+                req.on('data', chunk => {
+                    body += chunk.toString();
+                });
+                req.on('end', () => {
+                    try {
+                        const data = JSON.parse(body);
+                        const { userId, amount } = data;
+                        if (!this.gameData.pendingCommands) {
+                            this.gameData.pendingCommands = new Map();
+                        }
+                        if (!this.gameData.pendingCommands.has(userId)) {
+                            this.gameData.pendingCommands.set(userId, []);
+                        }
+                        this.gameData.pendingCommands.get(userId).push({
+                            type: 'cash',
+                            data: { amount },
+                            timestamp: Date.now()
+                        });
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: true, message: 'Cash command queued' }));
+                    } catch (error) {
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: false, error: error.message }));
+                    }
+                });
+            } else if (pathname === '/api/player/commands' && method === 'GET') {
+                const parsedUrl = url.parse(req.url, true);
+                const userId = parsedUrl.query.userId;
+                if (userId && this.gameData.pendingCommands && this.gameData.pendingCommands.has(userId)) {
+                    const commands = this.gameData.pendingCommands.get(userId);
+                    this.gameData.pendingCommands.delete(userId); // Clear after reading
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, commands }));
+                } else {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, commands: [] }));
+                }
             } else {
                 res.writeHead(404, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, error: 'Not found' }));
@@ -885,6 +1529,11 @@ class GridDiscordBot {
             console.log(`   POST /api/player/join - Report player join`);
             console.log(`   POST /api/player/leave - Report player leave`);
             console.log(`   GET /api/players/online - Get online players`);
+            console.log(`   POST /api/player/roles - Update player roles`);
+            console.log(`   GET /api/player/roles - Get player roles`);
+            console.log(`   POST /api/admin/spawn - Admin spawn command`);
+            console.log(`   POST /api/admin/cash - Admin cash command`);
+            console.log(`   GET /api/player/commands - Get pending commands`);
         });
         
         await this.client.login(this.token);

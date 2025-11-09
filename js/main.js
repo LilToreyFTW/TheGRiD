@@ -54,6 +54,18 @@ import { MinimapSystem } from './minimap.js';
 import { DiscordIntegration } from './discord.js';
 // ADDED - Discord webhooks
 import { DiscordWebhooks } from './discordWebhooks.js';
+// ADDED - Character selection
+import { CharacterSelectionSystem } from './characterSelection.js';
+// ADDED - Role permissions
+import { RolePermissionsSystem } from './rolePermissions.js';
+// ADDED - Cash system
+import { CashSystem } from './cashSystem.js';
+// ADDED - Job system
+import { JobSystem } from './jobSystem.js';
+// ADDED - Admin menu
+import { AdminMenuSystem } from './adminMenu.js';
+// ADDED - Vehicle spawner
+import { VehicleSpawnerSystem } from './vehicleSpawner.js';
 
 class GameApp {
     constructor() {
@@ -132,6 +144,21 @@ class GameApp {
         this.playerId = this.generatePlayerId();
         this.playerUsername = this.getPlayerUsername();
         this.discordBotAPI = 'http://localhost:3001'; // Discord bot API endpoint
+        
+        // ADDED - Character selection system
+        this.characterSelection = null;
+        // ADDED - Role permissions system
+        this.rolePermissions = null;
+        // ADDED - Cash system
+        this.cashSystem = null;
+        // ADDED - Job system
+        this.jobSystem = null;
+        // ADDED - Admin menu
+        this.adminMenu = null;
+        // ADDED - Vehicle spawner
+        this.vehicleSpawner = null;
+        // ADDED - Player permissions
+        this.playerPermissions = {};
         
         this.init();
     }
@@ -306,6 +333,26 @@ class GameApp {
         this.discordIntegration.initialize();
         this.discordIntegration.updateGameState('menu');
 
+        // ADDED - Initialize Cash System
+        this.cashSystem = new CashSystem(this);
+
+        // ADDED - Initialize Job System
+        this.jobSystem = new JobSystem(this);
+
+        // ADDED - Initialize Vehicle Spawner
+        this.vehicleSpawner = new VehicleSpawnerSystem(this.scene, this);
+
+        // ADDED - Initialize Role Permissions System
+        this.rolePermissions = new RolePermissionsSystem(this);
+        this.rolePermissions.initialize();
+
+        // ADDED - Initialize Admin Menu
+        this.adminMenu = new AdminMenuSystem(this);
+
+        // ADDED - Initialize Character Selection (but don't show yet - wait for start button)
+        this.characterSelection = new CharacterSelectionSystem(this);
+        // Character selection will be shown when start button is clicked if no character selected
+
         // ADDED - Report player join to Discord bot API
         this.reportPlayerJoin();
         
@@ -420,9 +467,11 @@ class GameApp {
         this.setupEventListeners();
 
         // Hide start screen and start game
+        console.log('Calling setupUI()...');
         this.setupUI();
 
         // Start animation loop
+        console.log('Starting animation loop...');
         this.animate();
     }
 
@@ -471,66 +520,137 @@ class GameApp {
                 }
             }
             
-            // ADDED - Minimap toggle (press N)
-            if (e.code === 'KeyN' && this.minimapSystem) {
-                this.minimapSystem.toggle();
-            }
-            
-            // ADDED - Pause menu (press ESC or Pause)
-            if (e.code === 'Escape' || e.code === 'Pause') {
-                if (this.pauseMenu && this.isRunning) {
-                    this.pauseMenu.toggle();
-                    // ADDED - Update Discord presence when pausing
-                    if (this.discordIntegration) {
-                        this.discordIntegration.updateGameState(this.pauseMenu.isVisible ? 'paused' : 'playing');
-                    }
-                } else {
-                    // Close other UI windows
-                    if (this.modManagerUI) this.modManagerUI.hide();
-                    if (this.printerUI) this.printerUI.hide();
-                    if (this.leaderboardUI) this.leaderboardUI.hide();
-                    if (this.teleportationSystem) this.teleportationSystem.hide();
+                // ADDED - Admin menu (press F1)
+                if (e.code === 'F1' && this.adminMenu) {
+                    this.adminMenu.toggle();
                 }
+                
+                // ADDED - Pause menu (press ESC or Pause)
+                if (e.code === 'Escape' || e.code === 'Pause') {
+                    if (this.pauseMenu && this.isRunning) {
+                        this.pauseMenu.toggle();
+                        // ADDED - Update Discord presence when pausing
+                        if (this.discordIntegration) {
+                            this.discordIntegration.updateGameState(this.pauseMenu.isVisible ? 'paused' : 'playing');
+                        }
+                    } else {
+                        // Close other UI windows
+                        if (this.modManagerUI) this.modManagerUI.hide();
+                        if (this.printerUI) this.printerUI.hide();
+                        if (this.leaderboardUI) this.leaderboardUI.hide();
+                        if (this.teleportationSystem) this.teleportationSystem.hide();
+                        if (this.adminMenu) this.adminMenu.hide();
+                    }
+                }
+            });
+        }
+
+    startGame() {
+        console.log('startGame() called');
+        const startScreen = document.getElementById('start-screen');
+        if (startScreen) {
+            startScreen.style.display = 'none';
+        }
+        
+        // Apply character spawn location if available
+        if (this.characterSelection) {
+            const selectedChar = this.characterSelection.getSelectedCharacter();
+            if (selectedChar && this.player && this.player.yawObject) {
+                console.log('Applying character spawn location:', selectedChar.spawnLocation);
+                this.player.yawObject.position.set(
+                    selectedChar.spawnLocation.x,
+                    selectedChar.spawnLocation.y,
+                    selectedChar.spawnLocation.z
+                );
             }
-        });
+        }
+        
+        console.log('Setting isRunning to true');
+        this.isRunning = true;
+        
+        if (this.game) {
+            console.log('Starting game...');
+            this.game.start();
+        } else {
+            console.error('Game instance not found!');
+        }
+        
+        if (this.player) {
+            console.log('Enabling player controls...');
+            this.player.enableControls();
+        } else {
+            console.error('Player instance not found!');
+        }
+        
+        // Play UI sound
+        if (this.soundManager) {
+            this.soundManager.playUI();
+        }
+        
+        // Update Discord presence
+        if (this.discordIntegration) {
+            this.discordIntegration.updateGameState('playing');
+        }
+        
+        // Log game start
+        if (this.discordWebhooks) {
+            this.discordWebhooks.logGameStart(this.playerUsername);
+        }
+        
+        // Report player join when game starts
+        this.reportPlayerJoin();
+        
+        console.log('Game started successfully!');
     }
 
     setupUI() {
+        console.log('setupUI() called');
         const startButton = document.getElementById('start-button');
         const restartButton = document.getElementById('restart-button');
         const startScreen = document.getElementById('start-screen');
         const gameOverScreen = document.getElementById('game-over-screen');
 
+        if (!startButton) {
+            console.error('Start button not found!');
+            return;
+        }
+
+        console.log('Start button found, attaching event listener...');
         startButton.addEventListener('click', () => {
-            startScreen.style.display = 'none';
-            this.isRunning = true;
-            this.game.start();
-            this.player.enableControls();
-            // ADDED - Play UI sound
-            if (this.soundManager) {
-                this.soundManager.playUI();
+            console.log('Start button clicked!');
+            // Check if character is selected first
+            if (!this.characterSelection || !this.characterSelection.hasSelectedCharacter()) {
+                console.log('No character selected, showing character selection...');
+                // Show character selection instead of starting game
+                if (startScreen) {
+                    startScreen.style.display = 'none';
+                }
+                if (this.characterSelection) {
+                    this.characterSelection.show();
+                } else {
+                    console.error('Character selection system not initialized!');
+                    // Fallback: start game anyway if character selection isn't available
+                    console.log('Starting game without character selection...');
+                    this.startGame();
+                }
+                return;
             }
-            // ADDED - Update Discord presence
-            if (this.discordIntegration) {
-                this.discordIntegration.updateGameState('playing');
-            }
-            // ADDED - Log game start
-            if (this.discordWebhooks) {
-                this.discordWebhooks.logGameStart(this.playerUsername);
-            }
-            
-            // ADDED - Report player join when game starts
-            this.reportPlayerJoin();
+
+            console.log('Character selected, starting game...');
+            // Character is selected, start the game
+            this.startGame();
         });
 
-        restartButton.addEventListener('click', () => {
-            gameOverScreen.style.display = 'none';
-            this.restart();
-            // ADDED - Play UI sound
-            if (this.soundManager) {
-                this.soundManager.playUI();
-            }
-        });
+        if (restartButton) {
+            restartButton.addEventListener('click', () => {
+                gameOverScreen.style.display = 'none';
+                this.restart();
+                // ADDED - Play UI sound
+                if (this.soundManager) {
+                    this.soundManager.playUI();
+                }
+            });
+        }
     }
 
     setupGameStates() {
@@ -761,6 +881,11 @@ class GameApp {
         // Update FPS
         const fps = Math.round(1 / this.clock.getDelta());
         document.getElementById('fps-value').textContent = fps;
+
+        // ADDED - Update cash display
+        if (this.cashSystem) {
+            this.cashSystem.updateUI();
+        }
 
         // ADDED - Display GPU info in console (can add to HUD)
         if (this.advancedGraphics && fps % 60 === 0) {

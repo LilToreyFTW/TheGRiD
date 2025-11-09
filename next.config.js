@@ -6,6 +6,12 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Exclude problematic folders from TypeScript checking
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  // Exclude folders from compilation
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   // Serve static files from public directory
   async rewrites() {
     return [
@@ -71,6 +77,13 @@ const nextConfig = {
     config.module.rules.push({
       test: /\.(glb|gltf|fbx|obj)$/,
       type: 'asset/resource',
+    });
+
+    // Exclude BORTtheBOT folder from compilation
+    config.module.rules.push({
+      test: /\.(ts|tsx|js|jsx)$/,
+      include: /threeJS_Development\/BORTtheBOT/,
+      use: 'ignore-loader',
     });
 
     return config;

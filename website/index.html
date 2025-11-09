@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRiD - Official Game Website</title>
-    <link rel="stylesheet" href="website/css/style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <header class="header">
@@ -72,18 +72,38 @@
                 <h2>Download GRiD</h2>
                 <div class="download-section">
                     <div class="download-card">
-                        <h3>Windows</h3>
+                        <h3>Windows EXE</h3>
                         <p>Version 1.0.0</p>
                         <button class="btn-download" onclick="downloadGame('windows')">
-                            Download EXE (Windows)
+                            ⬇️ Download EXE
                         </button>
-                        <p class="file-size">~150 MB</p>
+                        <p class="file-size">~200 MB</p>
+                        <div class="download-progress">
+                            <div class="progress-text">Preparing download...</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="download-card">
+                        <h3>Windows Portable</h3>
+                        <p>No Installation Required</p>
+                        <button class="btn-download" onclick="downloadGame('portable')">
+                            ⬇️ Download Portable
+                        </button>
+                        <p class="file-size">~200 MB</p>
+                        <div class="download-progress">
+                            <div class="progress-text">Preparing download...</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="download-card">
                         <h3>Web Version</h3>
                         <p>Play in Browser</p>
                         <button class="btn-download" onclick="playWeb()">
-                            Play Now
+                            🎮 Play Now
                         </button>
                         <p class="file-size">No Download Required</p>
                     </div>
@@ -234,7 +254,56 @@
         </div>
     </footer>
 
-    <script src="website/js/main.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        // Make downloadGame function globally accessible
+        window.downloadGame = function(platform) {
+            if (platform === 'windows' || platform === 'portable') {
+                // Try to download from server
+                const fileName = platform === 'portable' ? 'GRiD-Portable.exe' : 'GRiD-Setup.exe';
+                const downloadUrl = `/downloads/${fileName}`;
+                
+                // Show progress
+                const downloadCard = event.target.closest('.download-card');
+                const progressDiv = downloadCard.querySelector('.download-progress');
+                if (progressDiv) {
+                    progressDiv.classList.add('active');
+                    const progressBar = progressDiv.querySelector('.progress-fill');
+                    const progressText = progressDiv.querySelector('.progress-text');
+                    
+                    // Simulate progress
+                    let progress = 0;
+                    const interval = setInterval(() => {
+                        progress += Math.random() * 15;
+                        if (progress > 100) progress = 100;
+                        progressBar.style.width = progress + '%';
+                        progressText.textContent = `Downloading... ${Math.floor(progress)}%`;
+                        
+                        if (progress >= 100) {
+                            clearInterval(interval);
+                            progressText.textContent = 'Download Complete!';
+                            
+                            // Trigger download
+                            const link = document.createElement('a');
+                            link.href = downloadUrl;
+                            link.download = fileName;
+                            link.click();
+                            
+                            setTimeout(() => {
+                                progressDiv.classList.remove('active');
+                            }, 2000);
+                        }
+                    }, 200);
+                } else {
+                    // Fallback: direct download
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = fileName;
+                    link.click();
+                }
+            }
+        };
+    </script>
 </body>
 </html>
 

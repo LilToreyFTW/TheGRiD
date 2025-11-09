@@ -2,6 +2,8 @@
   "name": "cores-new-game",
   "version": "1.0.0",
   "description": "GRiD - 3D Video Game with Discord Bot Integration",
+  "author": "GRiD Game Team",
+  "main": "electron/main.js",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,7 +13,12 @@
     "bot": "node discord-bot/index.js",
     "bot:dev": "nodemon discord-bot/index.js",
     "game:serve": "npx serve . -p 3000",
-    "game:dev": "npx serve . -p 3000"
+    "game:dev": "npx serve . -p 3000",
+    "electron": "electron .",
+    "electron:dev": "cross-env NODE_ENV=development electron .",
+    "build:exe": "electron-builder --win",
+    "build:exe:dir": "electron-builder --win --dir",
+    "build:all": "electron-builder --win --mac --linux"
   },
   "dependencies": {
     "next": "^14.0.4",
@@ -37,5 +44,74 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
+  },
+  "build": {
+    "appId": "com.grid.videogame",
+    "productName": "GRiD",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "js/**/*",
+      "css/**/*",
+      "index.html",
+      "loading.html",
+      "videogame/**/*",
+      "gametitle/**/*",
+      "threeJS_Development/devTools.js",
+      "threeJS_Development/README.md",
+      "!threeJS_Development/BORTtheBOT/**/*",
+      "!**/*.md",
+      "!**/*.log",
+      "!**/.git/**/*",
+      "!**/.vercel/**/*",
+      "!**/.next/**/*",
+      "!**/pages/**/*",
+      "!**/styles/**/*",
+      "!next.config.js",
+      "!tsconfig.json",
+      "!vercel.json",
+      "!discord-bot/**/*",
+      "!website/**/*",
+      "!node_modules/**/*",
+      "!dist/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "GRiD-Setup-${version}-${arch}.${ext}",
+      "publisherName": "GRiD Game"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "GRiD",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "menuCategory": "Games"
+    },
+    "portable": {
+      "artifactName": "GRiD-Portable-${version}-${arch}.${ext}"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.games"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Game"
+    }
   }
 }

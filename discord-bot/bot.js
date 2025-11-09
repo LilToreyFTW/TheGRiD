@@ -2,6 +2,8 @@
 const { Client, GatewayIntentBits, SlashCommandBuilder, REST, Routes, EmbedBuilder, ActivityType } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const url = require('url');
 
 class GridDiscordBot {
     constructor() {
@@ -34,12 +36,17 @@ class GridDiscordBot {
         // Game data storage (in production, use a database)
         this.gameData = {
             players: new Map(),
+            onlinePlayers: new Map(), // Track currently online players
             leaderboard: [],
             serverStatus: 'online'
         };
         
+        this.apiPort = process.env.API_PORT || 3001;
+        this.apiServer = null;
+        
         this.setupEventHandlers();
         this.setupCommands();
+        this.setupAPIServer();
     }
 
     setupEventHandlers() {
@@ -76,6 +83,10 @@ class GridDiscordBot {
             new SlashCommandBuilder()
                 .setName('serverstatus')
                 .setDescription('Check game server status'),
+            
+            new SlashCommandBuilder()
+                .setName('online')
+                .setDescription('View currently online players'),
             
             // Player Commands
             new SlashCommandBuilder()
@@ -227,6 +238,9 @@ class GridDiscordBot {
                 case 'serverstatus':
                     await this.handleServerStatus(interaction);
                     break;
+                case 'online':
+                    await this.handleOnlinePlayers(interaction);
+                    break;
                 case 'player':
                     await this.handlePlayer(interaction);
                     break;
@@ -301,9 +315,40 @@ class GridDiscordBot {
             .setDescription(`**Status:** ${status.toUpperCase()}`)
             .setColor(statusColor)
             .addFields(
-                { name: 'Players Online', value: this.gameData.players.size.toString(), inline: true },
+                { name: 'Players Online', value: this.gameData.onlinePlayers.size.toString(), inline: true },
+                { name: 'Total Players', value: this.gameData.players.size.toString(), inline: true },
                 { name: 'Uptime', value: this.getUptime(), inline: true }
             )
+            .setTimestamp();
+
+        await interaction.reply({ embeds: [embed] });
+    }
+
+    async handleOnlinePlayers(interaction) {
+        const onlinePlayers = Array.from(this.gameData.onlinePlayers.values());
+        
+        if (onlinePlayers.length === 0) {
+            const embed = new EmbedBuilder()
+                .setTitle('👥 Online Players')
+                .setDescription('No players currently online')
+                .setColor(0x888888)
+                .setTimestamp();
+            await interaction.reply({ embeds: [embed] });
+            return;
+        }
+
+        // Show first 20 players
+        const displayPlayers = onlinePlayers.slice(0, 20);
+        const playersText = displayPlayers.map((player, index) => {
+            const playTime = Math.floor((Date.now() - player.joinTime) / 1000);
+            return `${index + 1}. **${player.username}** - ${this.formatPlayTime(playTime)}`;
+        }).join('\n');
+
+        const embed = new EmbedBuilder()
+            .setTitle(`👥 Online Players (${onlinePlayers.length})`)
+            .setDescription(playersText)
+            .setColor(0x4CAF50)
+            .setFooter({ text: onlinePlayers.length > 20 ? `Showing first 20 of ${onlinePlayers.length} players` : '' })
             .setTimestamp();
 
         await interaction.reply({ embeds: [embed] });
@@ -646,9 +691,18 @@ class GridDiscordBot {
 
     async updateServerStatus() {
         setInterval(() => {
-            // Update bot status
-            const playerCount = this.gameData.players.size;
-            this.client.user.setActivity(`${playerCount} players online`, { type: ActivityType.Watching });
+            // Update bot status (already handled by updateBotActivity)
+            this.updateBotActivity();
+            
+            // Clean up stale players (if they haven't updated in 5 minutes)
+            const now = Date.now();
+            for (const [playerId, player] of this.gameData.onlinePlayers.entries()) {
+                if (now - player.lastSeen > 300000) { // 5 minutes
+                    console.log(`🧹 Removing stale player: ${player.username} (${playerId})`);
+                    this.gameData.onlinePlayers.delete(playerId);
+                    this.updateBotActivity();
+                }
+            }
         }, 60000); // Update every minute
     }
 
@@ -667,11 +721,172 @@ class GridDiscordBot {
         return userId === this.ownerId;
     }
 
+    setupAPIServer() {
+        // ADDED - HTTP API server for game to report player status
+        this.apiServer = http.createServer((req, res) => {
+            const parsedUrl = url.parse(req.url, true);
+            const pathname = parsedUrl.pathname;
+            const method = req.method;
+
+            // CORS headers
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+            if (method === 'OPTIONS') {
+                res.writeHead(200);
+                res.end();
+                return;
+            }
+
+            if (pathname === '/api/player/join' && method === 'POST') {
+                let body = '';
+                req.on('data', chunk => {
+                    body += chunk.toString();
+                });
+                req.on('end', () => {
+                    try {
+                        const data = JSON.parse(body);
+                        this.handlePlayerJoin(data);
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: true, message: 'Player joined' }));
+                    } catch (error) {
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: false, error: error.message }));
+                    }
+                });
+            } else if (pathname === '/api/player/leave' && method === 'POST') {
+                let body = '';
+                req.on('data', chunk => {
+                    body += chunk.toString();
+                });
+                req.on('end', () => {
+                    try {
+                        const data = JSON.parse(body);
+                        this.handlePlayerLeave(data);
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: true, message: 'Player left' }));
+                    } catch (error) {
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: false, error: error.message }));
+                    }
+                });
+            } else if (pathname === '/api/players/online' && method === 'GET') {
+                const onlinePlayers = Array.from(this.gameData.onlinePlayers.values());
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, players: onlinePlayers, count: onlinePlayers.length }));
+            } else {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: 'Not found' }));
+            }
+        });
+
+        this.apiServer.on('error', (error) => {
+            console.error('❌ API Server error:', error);
+        });
+    }
+
+    handlePlayerJoin(data) {
+        const { username, playerId, version } = data;
+        const joinTime = Date.now();
+        
+        if (!username || !playerId) {
+            console.warn('Invalid player join data:', data);
+            return;
+        }
+
+        // Store online player
+        this.gameData.onlinePlayers.set(playerId, {
+            username,
+            playerId,
+            version: version || '1.0.0',
+            joinTime,
+            lastSeen: joinTime
+        });
+
+        // Update player data
+        if (!this.gameData.players.has(username.toLowerCase())) {
+            this.gameData.players.set(username.toLowerCase(), this.getDefaultPlayerData(username));
+        }
+
+        console.log(`✅ Player joined: ${username} (${playerId})`);
+        
+        // Send to Discord
+        this.sendToGameLogs(
+            '🎮 Player Joined',
+            `**${username}** joined the game`,
+            {
+                'Player ID': playerId,
+                'Version': version || '1.0.0',
+                'Online Players': this.gameData.onlinePlayers.size.toString()
+            },
+            0x4CAF50
+        );
+
+        // Update bot activity
+        this.updateBotActivity();
+    }
+
+    handlePlayerLeave(data) {
+        const { username, playerId } = data;
+        
+        if (!playerId) {
+            console.warn('Invalid player leave data:', data);
+            return;
+        }
+
+        const player = this.gameData.onlinePlayers.get(playerId);
+        if (player) {
+            const playTime = Math.floor((Date.now() - player.joinTime) / 1000);
+            console.log(`👋 Player left: ${player.username || username} (${playerId}) - Played for ${playTime}s`);
+            
+            // Update player stats
+            if (this.gameData.players.has((player.username || username).toLowerCase())) {
+                const playerData = this.gameData.players.get((player.username || username).toLowerCase());
+                playerData.playTime += playTime;
+            }
+
+            // Remove from online players
+            this.gameData.onlinePlayers.delete(playerId);
+
+            // Send to Discord
+            this.sendToGameLogs(
+                '👋 Player Left',
+                `**${player.username || username}** left the game`,
+                {
+                    'Play Time': this.formatPlayTime(playTime),
+                    'Online Players': this.gameData.onlinePlayers.size.toString()
+                },
+                0xff9800
+            );
+
+            // Update bot activity
+            this.updateBotActivity();
+        }
+    }
+
+    updateBotActivity() {
+        const playerCount = this.gameData.onlinePlayers.size;
+        this.client.user.setActivity(`${playerCount} player${playerCount !== 1 ? 's' : ''} online`, { 
+            type: ActivityType.Watching 
+        });
+    }
+
     async start() {
         if (!this.token) {
             console.error('❌ DISCORD_BOT_TOKEN not set! Please set it in your environment variables.');
             return;
         }
+        
+        // Start API server
+        this.apiServer.listen(this.apiPort, () => {
+            console.log(`🌐 API Server listening on port ${this.apiPort}`);
+            console.log(`   Endpoints:`);
+            console.log(`   POST /api/player/join - Report player join`);
+            console.log(`   POST /api/player/leave - Report player leave`);
+            console.log(`   GET /api/players/online - Get online players`);
+        });
+        
         await this.client.login(this.token);
     }
 }

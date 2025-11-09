@@ -128,7 +128,70 @@ class GameApp {
         // ADDED - Discord integration
         this.discordIntegration = new DiscordIntegration();
         
+        // ADDED - Player tracking for Discord bot
+        this.playerId = this.generatePlayerId();
+        this.playerUsername = this.getPlayerUsername();
+        this.discordBotAPI = 'http://localhost:3001'; // Discord bot API endpoint
+        
         this.init();
+    }
+
+    generatePlayerId() {
+        // Generate unique player ID
+        return 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    getPlayerUsername() {
+        // Get username from localStorage or prompt
+        let username = localStorage.getItem('grid_username');
+        if (!username) {
+            username = 'Player' + Math.floor(Math.random() * 10000);
+            localStorage.setItem('grid_username', username);
+        }
+        return username;
+    }
+
+    async reportPlayerJoin() {
+        // Report player join to Discord bot
+        try {
+            const response = await fetch(`${this.discordBotAPI}/api/player/join`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: this.playerUsername,
+                    playerId: this.playerId,
+                    version: '1.0.0'
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                console.log('✅ Reported player join to Discord bot');
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not report player join to Discord bot:', error.message);
+            // Bot might not be running, that's okay
+        }
+    }
+
+    async reportPlayerLeave() {
+        // Report player leave to Discord bot
+        try {
+            await fetch(`${this.discordBotAPI}/api/player/leave`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: this.playerUsername,
+                    playerId: this.playerId
+                })
+            });
+            console.log('✅ Reported player leave to Discord bot');
+        } catch (error) {
+            // Silently fail - bot might not be running
+        }
     }
 
     init() {
@@ -243,20 +306,18 @@ class GameApp {
         this.discordIntegration.initialize();
         this.discordIntegration.updateGameState('menu');
 
-        // ADDED - Get player username for webhooks (from localStorage or prompt)
-        this.playerUsername = localStorage.getItem('grid_username') || 'Player' + Math.floor(Math.random() * 10000);
-        if (!localStorage.getItem('grid_username')) {
-            const username = prompt('Enter your username (or leave blank for random):');
-            if (username && username.trim()) {
-                this.playerUsername = username.trim();
-                localStorage.setItem('grid_username', this.playerUsername);
-            }
-        }
-
-        // ADDED - Log player join
+        // ADDED - Report player join to Discord bot API
+        this.reportPlayerJoin();
+        
+        // ADDED - Log player join to webhooks
         if (this.discordWebhooks) {
             this.discordWebhooks.logPlayerJoin(this.playerUsername);
         }
+        
+        // ADDED - Setup window close handler to report player leave
+        window.addEventListener('beforeunload', () => {
+            this.reportPlayerLeave();
+        });
 
         // ADDED - Start initial missions
         this.missionSystem.startMission('tutorial_move');
@@ -457,6 +518,9 @@ class GameApp {
             if (this.discordWebhooks) {
                 this.discordWebhooks.logGameStart(this.playerUsername);
             }
+            
+            // ADDED - Report player join when game starts
+            this.reportPlayerJoin();
         });
 
         restartButton.addEventListener('click', () => {
